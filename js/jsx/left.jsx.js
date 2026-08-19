@@ -868,7 +868,7 @@ WLeftPanel = React.createClass({
 
         var canHunt = ((game.resPool.get("paragon").value > 0) || (game.science.get("archery").researched)) &&
             (!game.challenges.isActive("pacifism"));
-        var showFastHunt = (catpower.value >= huntCost);
+        var showFastHunt = (catpower.value >= huntCost) || game.village.huntAllPinned;
 
         var map = game.village.map;
         var lastBiomeName = map.lastBiome ? game.village.getBiome(map.lastBiome).title : "";

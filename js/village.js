@@ -842,7 +842,8 @@ dojo.declare("classes.managers.VillageManager", com.nuclearunicorn.core.TabManag
 			hadKittenHunters: this.sim.hadKittenHunters,
 			nextKittenProgress: this.sim.nextKittenProgress,
 			map: this.map.save(),
-			loadouts: loadouts
+			loadouts: loadouts,
+			huntAllPinned: this.huntAllPinned
 		};
 	},
 
@@ -910,6 +911,7 @@ dojo.declare("classes.managers.VillageManager", com.nuclearunicorn.core.TabManag
 			}
 		}
 
+		this.huntAllPinned = saveData.village.huntAllPinned;
 		this.updateResourceProduction();
 	},
 
@@ -5419,12 +5421,27 @@ dojo.declare("classes.village.ui.HuntBtn", com.nuclearunicorn.game.ui.ButtonMode
 		this.huntAllHref = this.addLink(this.model.allLink);
 		this.huntHalfHref = this.addLink(this.model.halfLink);
 		this.huntFifthHref = this.addLink(this.model.fifthLink);
+		this.pinLinkHref = this.addLink({
+			title: "&#9733;",
+			handler: function() {
+				// if (!this.race.embassyLevel){
+				// 	return;
+				// }
+				this.game.village.huntAllPinned = !this.game.village.huntAllPinned;
+				// this.race.pinned = !this.race.pinned;
+				// console.log("toggled pin for race:", this.game.diplomacy.races);
+			}
+		});
 	},
 	update: function() {
 		this.inherited(arguments);
 		this.updateLink(this.huntFifthHref, this.model.fifthLink);
 		this.updateLink(this.huntHalfHref, this.model.halfLink);
 		this.updateLink(this.huntAllHref, this.model.allLink);
+		// this.updateLink(this.pinLinkHref, this.model.pinLinkHref);
+		this.pinLinkHref.link.textContent = this.game.village.huntAllPinned ? "[v]" : "[ ]";
+		this.pinLinkHref.link.title = this.game.village.huntAllPinned ?
+			$I("trade.embassy.pinned") : $I("trade.embassy.unpinned");
 	}
 });
 
@@ -5436,6 +5453,7 @@ dojo.declare("classes.village.ui.HuntButtonController", classes.village.ui.Villa
 		model.fifthLink = this._newLink(model, 5, village.huntFifth.bind(village));
 		model.halfLink = this._newLink(model, 2, village.huntHalf.bind(village));
 		model.allLink = this._newLink(model, 1, village.huntAll.bind(village));
+		// model.pinLinkHref = this._newLink(model, 1, village.huntAll.bind(village));
 		return model;
 	},
 
