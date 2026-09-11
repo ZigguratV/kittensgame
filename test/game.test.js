@@ -63,6 +63,89 @@ const _get = (id) => {
     return model;
 }
 
+test("New kittens save seed-generated attributes by seed", () => {
+    game.village.sim.addKitten();
+
+    let kitten = game.village.sim.kittens[0];
+    let generatedAttributes = {
+        name: kitten.name,
+        surname: kitten.surname,
+        age: kitten.age,
+        trait: kitten.trait.name,
+        color: kitten.color,
+        variety: kitten.variety,
+        rarity: kitten.rarity
+    };
+    kitten.job = "woodcutter";
+    kitten.skills.woodcutter = 100;
+    kitten.exp = 25;
+    kitten.rank = 1;
+    kitten.favorite = true;
+
+    expect(kitten.seed).toBeGreaterThanOrEqual(0);
+    expect(kitten.seed).toBeLessThanOrEqual(999999);
+
+    let saveData = kitten.save(true, game.village.jobNames);
+
+    expect(saveData.seed).toBe(kitten.seed);
+	// this is currently still present for backwards compatibility
+    expect(saveData.ssn).toBeDefined();
+
+    expect(saveData.name).toBeUndefined();
+    expect(saveData.surname).toBeUndefined();
+
+    let loadedKitten = new com.nuclearunicorn.game.village.Kitten();
+    loadedKitten.load(saveData, game.village.jobNames);
+
+    expect(loadedKitten.name).toBe(generatedAttributes.name);
+    expect(loadedKitten.surname).toBe(generatedAttributes.surname);
+    expect(loadedKitten.age).toBe(generatedAttributes.age);
+    expect(loadedKitten.trait.name).toBe(generatedAttributes.trait);
+    expect(loadedKitten.color).toBe(generatedAttributes.color);
+    expect(loadedKitten.variety).toBe(generatedAttributes.variety);
+    expect(loadedKitten.rarity).toBe(generatedAttributes.rarity);
+    expect(loadedKitten.job).toBe("woodcutter");
+    expect(loadedKitten.skills.woodcutter).toBe(100);
+    expect(loadedKitten.exp).toBe(25);
+    expect(loadedKitten.rank).toBe(1);
+    expect(loadedKitten.favorite).toBe(true);
+});
+
+test("Seedless kittens save and load generated attributes directly", () => {
+    let kitten = new com.nuclearunicorn.game.village.Kitten();
+    kitten.seed = null;
+    kitten.name = "Legacy";
+    kitten.surname = "Kitten";
+    kitten.age = 42;
+    kitten.trait = kitten.traits[2];
+    kitten.color = 5;
+    kitten.variety = 3;
+    kitten.rarity = 2;
+
+    let saveData = kitten.save(false, game.village.jobNames);
+
+    expect(saveData.seed).toBeUndefined();
+    expect(saveData.name).toBe("Legacy");
+    expect(saveData.surname).toBe("Kitten");
+    expect(saveData.age).toBe(42);
+    expect(saveData.trait.name).toBe("engineer");
+    expect(saveData.color).toBe(5);
+    expect(saveData.variety).toBe(3);
+    expect(saveData.rarity).toBe(2);
+
+    let loadedKitten = new com.nuclearunicorn.game.village.Kitten(123456);
+    loadedKitten.load(saveData, game.village.jobNames);
+
+    expect(loadedKitten.seed).toBe(null);
+    expect(loadedKitten.name).toBe("Legacy");
+    expect(loadedKitten.surname).toBe("Kitten");
+    expect(loadedKitten.age).toBe(42);
+    expect(loadedKitten.trait.name).toBe("engineer");
+    expect(loadedKitten.color).toBe(5);
+    expect(loadedKitten.variety).toBe(3);
+    expect(loadedKitten.rarity).toBe(2);
+});
+
 //----------------------------------
 //  Basic building and unlocks
 //  Effects and metadata processing
@@ -1093,4 +1176,32 @@ test("Metaphysics upgrade unlock tree must be sensible", () => {
             }
         }
     }
+});
+
+test("Toggling hodl mode must liquidate b-coin at the pre-switch price", () => {
+    const hodl = game.settings.getSetting("hodl");
+    game.calendar.cryptoPrice = 1000; //legacy simulated price
+    game.server.bcoinPrice = 63918;   //real-world price
+
+    //Start out in legacy mode & buy a stash at the cheap simulated price
+    game.settings.set(hodl, false);
+    game.resPool.get("relic").value = 1e6;
+    game.resPool.get("blackcoin").value = 0;
+    game.diplomacy.buyBcoin();
+    expect(game.resPool.get("blackcoin").value).toBe(1000);
+    expect(game.resPool.get("relic").value).toBe(0);
+
+    //Flipping to hodl cashes out at the old price, otherwise it'd be 1000 x 63918 relics for free
+    game.settings.set(hodl, true);
+    expect(game.opts.hodl).toBe(true);
+    expect(game.resPool.get("blackcoin").value).toBe(0);
+    expect(game.resPool.get("relic").value).toBe(1e6);
+
+    //...and the same holds switching back, so neither direction is arbitrage
+    game.diplomacy.buyBcoin();
+    expect(game.resPool.get("blackcoin").value).toBe(1e6 / 63918);
+    game.settings.set(hodl, false);
+    expect(game.opts.hodl).toBe(false);
+    expect(game.resPool.get("blackcoin").value).toBe(0);
+    expect(game.resPool.get("relic").value).toBe(1e6);
 });

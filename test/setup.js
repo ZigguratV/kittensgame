@@ -69,7 +69,6 @@ try {
     global.$.ajax = function(){ return xhrMock; };
 
     global.LZString = require("../lib/lz-string.js");
-    require("../lib/dropbox_v2.js");
     require("../lib/system.js");
 
     global.LCstorage = window.localStorage;
@@ -106,6 +105,7 @@ try {
     require("../js/challenges");
     require("../js/void");
     require("../js/math");
+    require("../js/preview");
     require("../game");
     require("../js/jsx/left.jsx");
     require("../js/ui");
