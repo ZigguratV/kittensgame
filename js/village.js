@@ -524,8 +524,16 @@ dojo.declare("classes.managers.VillageManager", com.nuclearunicorn.core.TabManag
 		this.getJob("ambassador").lackResConvert = effectScaling < 1;
 
 		this.game.diplomacy.cachedAmbassadorEffects = {};
+		var freeAmbassadorBonus = this.game.getEffect("freeAmbassador") * (this.happiness + (this.happiness - 1)
+			* this.game.getEffect("happinessKittenProductionRatio"))
 		for (var effectName in this.getJob("ambassador").modifiers) {
 			var effectAmt = effectScaling * (villageEffectsMap[effectName] || 0);
+
+			if (freeAmbassadorBonus > 0 && (effectName != "cultureConsumptionAmbassadors" 
+					&& effectName != "spiceConsumptionAmbassadors")) {
+				console.warn(freeAmbassadorBonus);
+				effectAmt += this.getJob("ambassador").modifiers[effectName] * freeAmbassadorBonus;
+			}
 			if (effectName.length > 6 && effectName.substring(effectName.length - 6) == "Chance") {
 				//Probability-related effects are subject to diminishing returns, for balance reasons
 				effectAmt = this.game.getLimitedDR(effectAmt, 0.25);
